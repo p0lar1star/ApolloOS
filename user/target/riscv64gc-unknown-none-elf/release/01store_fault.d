@@ -1,0 +1,1 @@
+/home/oslab/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/01store_fault: /home/oslab/Desktop/oslab/user/src/bin/01store_fault.rs /home/oslab/Desktop/oslab/user/src/console.rs /home/oslab/Desktop/oslab/user/src/lang_items.rs /home/oslab/Desktop/oslab/user/src/lib.rs /home/oslab/Desktop/oslab/user/src/syscall.rs

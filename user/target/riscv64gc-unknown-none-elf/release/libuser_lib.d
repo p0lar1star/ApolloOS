@@ -1,0 +1,1 @@
+/home/oslab/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/libuser_lib.rlib: /home/oslab/Desktop/oslab/user/src/console.rs /home/oslab/Desktop/oslab/user/src/lang_items.rs /home/oslab/Desktop/oslab/user/src/lib.rs /home/oslab/Desktop/oslab/user/src/syscall.rs

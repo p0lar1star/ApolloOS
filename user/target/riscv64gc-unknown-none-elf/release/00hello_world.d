@@ -1,0 +1,1 @@
+/home/oslab/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/00hello_world: /home/oslab/Desktop/oslab/user/src/bin/00hello_world.rs /home/oslab/Desktop/oslab/user/src/console.rs /home/oslab/Desktop/oslab/user/src/lang_items.rs /home/oslab/Desktop/oslab/user/src/lib.rs /home/oslab/Desktop/oslab/user/src/syscall.rs

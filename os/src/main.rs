@@ -7,14 +7,13 @@ mod console;
 mod lang_items;
 mod sbi; // kernel communicate with Rust SBI
 use core::arch::global_asm;
-use sbi::{console_putchar, shutdown};
 global_asm!(include_str!("entry.asm"));
+global_asm!(include_str!("link_app.S"));
 
 #[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
     println!("Hello World!");
-    // shutdown();
     panic!("Shutdown machine!");
 }
 
