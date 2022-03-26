@@ -22,10 +22,13 @@ global_asm!(include_str!("link_app.S"));
 pub fn rust_main() -> ! {
     clear_bss();
     println!("[kernel] Hello, World!");
+    // 先初始化中断向量
     trap::init();
+    // 再初始化批处理系统
     batch::init();
     println!("{}", "\nHello, batch system!");
     println!("{}", "Let's run applications\n");
+    // 运行程序
     batch::run_next_app();
     // panic!("Shutdown machine!");
 }

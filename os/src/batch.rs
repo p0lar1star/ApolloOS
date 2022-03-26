@@ -14,8 +14,10 @@ const APP_SIZE_LIMIT: usize = 0x20000;
 
 struct AppManager {
     num_app: usize,
+    // 总应用程序的数量
     current_app: usize,
-    app_start: [usize; MAX_APP_NUM + 1],
+    // 指示当前应该运行的程序
+    app_start: [usize; MAX_APP_NUM + 1],// app_start指向每个程序的指令入口点
 }
 
 lazy_static! {
@@ -76,12 +78,12 @@ impl AppManager {
         asm!("fence.i");
         // clear app area
         core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, APP_SIZE_LIMIT).fill(0);
-        // app_src is an unmutable slice from app_start[id] location, length is the size of app
+        // app_src是第app_id个程序原始数据的不可变切片，长度为后一个程序的起始地址减去这个程序的起始地址
         let app_src = core::slice::from_raw_parts(
             self.app_start[app_id] as *const u8,
-            self.app_start[app_id + 1] - self.app_start[app_id],
+            self.app_start[app_id + 1] - self.app_start[app_id],// app_start：指向每个应用程序的入口点的指针组成的usize数组
         );
-        // app_dst is a mutable slice from 0x80400000, length is the size of app
+        // app_dst是一个起始地址为0x804000000，长度为第app_id个程序长度的可变切片
         let app_dst = core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, app_src.len());
         // load to memory
         app_dst.copy_from_slice(app_src);
@@ -125,7 +127,11 @@ impl KernelStack {
     fn get_sp(&self) -> usize {
         self.data.as_ptr() as usize + KERNEL_STACK_SIZE
     }
+    // 此时在S特权级，目的是传入上下文
+    // 向内核栈中push app初始化所需的上下文
+    // 返回指向内核栈顶KernelStack的静态可变指针
     pub fn push_context(&self, cx: TrapContext) -> &'static mut TrapContext {
+        // 扩栈，返回指向内核栈顶KernelStack的可变指针，指针类型是*mut TrapContext
         let cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
         unsafe {
             *cx_ptr = cx;
@@ -134,6 +140,7 @@ impl KernelStack {
     }
 }
 
+// 运行下一个app
 pub fn run_next_app() -> ! {
     let mut app_manager = APP_MANAGER.exclusive_access();
     let current_app = app_manager.get_current_app();

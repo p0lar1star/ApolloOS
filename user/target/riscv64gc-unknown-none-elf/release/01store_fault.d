@@ -1,0 +1,1 @@
+/mnt/hgfs/oslab/user/target/riscv64gc-unknown-none-elf/release/01store_fault: /mnt/hgfs/oslab/user/src/bin/01store_fault.rs /mnt/hgfs/oslab/user/src/console.rs /mnt/hgfs/oslab/user/src/lang_items.rs /mnt/hgfs/oslab/user/src/lib.rs /mnt/hgfs/oslab/user/src/syscall.rs

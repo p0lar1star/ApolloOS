@@ -19,6 +19,7 @@ pub fn init() {
         fn __alltraps();
     }
     unsafe {
+        // 设置中断向量表的地址为__alltraps
         stvec::write(__alltraps as usize, TrapMode::Direct);
     }
 }
