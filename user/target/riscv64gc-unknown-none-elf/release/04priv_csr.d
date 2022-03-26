@@ -1,1 +1,1 @@
-/home/oslab/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/04priv_csr: /home/oslab/Desktop/oslab/user/src/bin/04priv_csr.rs /home/oslab/Desktop/oslab/user/src/console.rs /home/oslab/Desktop/oslab/user/src/lang_items.rs /home/oslab/Desktop/oslab/user/src/lib.rs /home/oslab/Desktop/oslab/user/src/syscall.rs
+/mnt/hgfs/oslab/user/target/riscv64gc-unknown-none-elf/release/04priv_csr: /mnt/hgfs/oslab/user/src/bin/04priv_csr.rs /mnt/hgfs/oslab/user/src/console.rs /mnt/hgfs/oslab/user/src/lang_items.rs /mnt/hgfs/oslab/user/src/lib.rs /mnt/hgfs/oslab/user/src/syscall.rs

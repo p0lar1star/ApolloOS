@@ -1,1 +1,1 @@
-/home/oslab/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/02power: /home/oslab/Desktop/oslab/user/src/bin/02power.rs /home/oslab/Desktop/oslab/user/src/console.rs /home/oslab/Desktop/oslab/user/src/lang_items.rs /home/oslab/Desktop/oslab/user/src/lib.rs /home/oslab/Desktop/oslab/user/src/syscall.rs
+/mnt/hgfs/oslab/user/target/riscv64gc-unknown-none-elf/release/02power: /mnt/hgfs/oslab/user/src/bin/02power.rs /mnt/hgfs/oslab/user/src/console.rs /mnt/hgfs/oslab/user/src/lang_items.rs /mnt/hgfs/oslab/user/src/lib.rs /mnt/hgfs/oslab/user/src/syscall.rs
