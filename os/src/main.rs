@@ -2,18 +2,26 @@
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
-#![feature(type_ascription)]
 
 use core::arch::global_asm;
 
+#[cfg(feature = "board_k210")]
+#[path = "boards/k210.rs"]
+mod board;
+#[cfg(not(any(feature = "board_k210")))]
+#[path = "boards/qemu.rs"]
+mod board;
 #[macro_use]
 mod console;
-mod batch;
 mod lang_items;
-mod sbi; // kernel communicate with Rust SBI
+mod sbi;
 mod sync;
 mod syscall;
+mod loader;
+mod config;
 mod trap;
+mod task;
+mod timer;
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
@@ -24,13 +32,13 @@ pub fn rust_main() -> ! {
     println!("[kernel] Hello, World!");
     // 先初始化中断向量
     trap::init();
-    // 再初始化批处理系统
-    batch::init();
-    println!("{}", "\nHello, batch system!");
-    println!("{}", "Let's run applications\n");
-    // 运行程序
-    batch::run_next_app();
-    // panic!("Shutdown machine!");
+    // 从内核的数据段加载所有应用程序到物理内存
+    loader::load_apps();
+    // 避免S特权级时钟中断被屏蔽
+    trap::enable_timer_interrupt();
+    timer::set_next_trigger();
+    task::run_first_task();
+    panic!("Unreachable in rust_main!");
 }
 
 fn clear_bss() {

@@ -1,9 +1,11 @@
-use riscv::register::sstatus::{self, Sstatus, SPP};
+use riscv::register::sstatus::{self, SPP, Sstatus};
+
 // os/src/trap/context.rs
 #[repr(C)]
 pub struct TrapContext {
     pub x: [usize; 32],
-    pub sstatus: Sstatus, // sstatus
+    pub sstatus: Sstatus,
+    // sstatus
     pub sepc: usize,     // return addr
 }
 
@@ -25,7 +27,7 @@ impl TrapContext {
             sstatus,
             sepc: entry,
         };
-        cx.set_sp(sp: usize);
+        cx.set_sp(sp);
         cx
     }
 }

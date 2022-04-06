@@ -1,16 +1,20 @@
-// os/src/trap/mod.rs
-mod context;
-
-use crate::batch::run_next_app;
-use crate::syscall::syscall;
+// os/src/syscall/mod.rs
 use core::arch::global_asm;
+
 use riscv::register::{
     mtvec::TrapMode,
-    scause::{self, Exception, Trap},
-    stval,
-    stvec
+    scause::{self, Exception, Interrupt, Trap},
+    stval, stvec, sie,
 };
+
 pub use context::TrapContext;
+
+use crate::task::{exit_current_and_run_next, suspend_current_and_run_next};
+use crate::timer::set_next_trigger;
+use crate::syscall::syscall;
+
+// os/src/trap/mod.rs
+mod context;
 
 global_asm!(include_str!("trap.S"));
 
@@ -38,17 +42,30 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
         }
         Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {
             println!("[kernel] PageFault in application, kernel killed it.");
-            run_next_app();
+            exit_current_and_run_next();
         }
-
         Trap::Exception(Exception::IllegalInstruction) => {
             println!("[kernel] IllegalInstruction in application, kernel killed it.");
-            run_next_app();
+            exit_current_and_run_next();
         }
-
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            set_next_trigger();
+            suspend_current_and_run_next();
+        }
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            set_next_trigger();
+            suspend_current_and_run_next();
+        }
         _ => {
             panic!("Unsupported trap {:?}, stval = {:#x}!", scause.cause(), stval);
         }
     }
     cx
+}
+
+// 设置sie.stie为1使S特权级时钟中断不会被屏蔽
+pub fn enable_timer_interrupt() {
+    unsafe{
+        sie::set_stimer();
+    }
 }

@@ -1,7 +1,6 @@
-/* user/src/linker.ld */
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
-/* Program will be loaded to 0x80400000 */
+
 BASE_ADDRESS = 0x80400000;
 
 SECTIONS
