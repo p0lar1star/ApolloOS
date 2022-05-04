@@ -1,13 +1,16 @@
-mod switch;
 mod context;
+mod switch;
+#[allow(clippy::module_inception)]
 mod task;
 
-use crate::config::MAX_APP_NUM;
-use crate::loader::{get_num_app, init_app_cx};
+use crate::loader::{get_app_data, get_num_app};
 use crate::sync::UPSafeCell;
+use crate::trap::TrapContext;
+use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
+
 pub use context::TaskContext;
 
 pub struct TaskManager {
@@ -16,31 +19,22 @@ pub struct TaskManager {
 }
 
 struct TaskManagerInner {
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    /// 任务控制块
+    tasks: Vec<TaskControlBlock>,
     current_task: usize,
 }
 
-// os/src/task/mod.rs
-// 重用并扩展之前初始化TaskManager的全局实例TASK_MANAGER
+// TaskManager的全局实例TASK_MANAGER
 lazy_static! {
+    /// 全局任务管理器
     pub static ref TASK_MANAGER: TaskManager = {
-        // 调用loader子模块提供的get_num_app接口获取链接到内核的应用总数
+        println!("init TASK_MANAGER");
         let num_app = get_num_app();
-        // 创建一个初始化的tasks数组，其中的每个任务控制块的运行状态都是Uninit
-        let mut tasks = [
-            TaskControlBlock {
-                task_cx: TaskContext::zero_init(), // 初始化
-                task_status: TaskStatus::UnInit // 未初始化状态
-            };
-            MAX_APP_NUM
-        ];
-        // 依次对每个任务控制块进行初始化，将其运行状态设置为Ready，表示可以运行
-        // 并依次初始化它的任务上下文
+        println!("num_app = {}", num_app);
+        let mut tasks: Vec<TaskControlBlock> = Vec::new();
         for i in 0..num_app {
-            tasks[i].task_cx = TaskContext::goto_restore(init_app_cx(i));
-            tasks[i].task_status = TaskStatus::Ready; // 准备运行状态
+            tasks.push(TaskControlBlock::new(get_app_data(i), i));
         }
-        // 创建TaskManager实例并返回
         TaskManager {
             num_app,
             inner: unsafe {
@@ -51,32 +45,6 @@ lazy_static! {
             },
         }
     };
-}
-
-pub fn suspend_current_and_run_next() {
-    mark_current_suspend();
-    run_next_task();
-}
-
-pub fn exit_current_and_run_next() {
-    mark_current_exited();
-    run_next_task();
-}
-
-fn mark_current_suspend() {
-    TASK_MANAGER.mark_current_suspend();
-}
-
-fn mark_current_exited() {
-    TASK_MANAGER.mark_current_exited();
-}
-
-fn run_next_task() {
-    TASK_MANAGER.run_next_task();
-}
-
-pub fn run_first_task() {
-    TASK_MANAGER.run_first_task();
 }
 
 impl TaskManager {
@@ -96,16 +64,40 @@ impl TaskManager {
         panic!("Unreachable in run_first_task!");
     }
 
-    fn mark_current_suspend(&self) {
+    fn mark_current_suspended(&self) {
         let mut inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        inner.tasks[current].task_status = TaskStatus::Ready;
+        let cur = inner.current_task;
+        inner.tasks[cur].task_status = TaskStatus::Ready;
     }
 
     fn mark_current_exited(&self) {
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
         inner.tasks[current].task_status = TaskStatus::Exited;
+    }
+
+    fn find_next_task(&self) -> Option<usize> {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        // tasks是一个固定的任务控制块组成的表，长度为num_app
+        // 可以用下标0~num_app-1来访问得到每个应用的控制状态
+        // 这里是为了找到current_task后面的第一个状态为Ready的应用
+        // 从current_task+1开始循环一圈
+        (current + 1..current + self.num_app + 1)
+            .map(|id| id % self.num_app)
+            .find(|id| {
+                inner.tasks[*id].task_status == TaskStatus::Ready
+            })
+    }
+    /// 获得当前正在执行的应用的地址空间的token
+    fn get_current_token(&self) -> usize {
+        let inner = self.inner.exclusive_access();
+        inner.tasks[inner.current_task].get_user_token()
+    }
+    /// 获得当前应用地址空间中的Trap上下文的可变引用
+    fn get_current_trap_cx(&self) -> &'static mut TrapContext {
+        let inner = self.inner.exclusive_access();
+        inner.tasks[inner.current_task].get_trap_cx()
     }
 
     fn run_next_task(&self) {
@@ -131,18 +123,38 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+}
 
-    fn find_next_task(&self) -> Option<usize> {
-        let inner = self.inner.exclusive_access();
-        let current = inner.current_task;
-        // tasks是一个固定的任务控制块组成的表，长度为num_app
-        // 可以用下标0~num_app-1来访问得到每个应用的控制状态
-        // 这里是为了找到current_task后面的第一个状态为Ready的应用
-        // 从current_task+1开始循环一圈
-        (current + 1..current + self.num_app + 1)
-            .map(|id| id % self.num_app)
-            .find(|id| {
-                inner.tasks[*id].task_status == TaskStatus::Ready
-            })
-    }
+pub fn run_first_task() {
+    TASK_MANAGER.run_first_task();
+}
+
+fn run_next_task() {
+    TASK_MANAGER.run_next_task();
+}
+
+fn mark_current_suspended() {
+    TASK_MANAGER.mark_current_suspended();
+}
+
+fn mark_current_exited() {
+    TASK_MANAGER.mark_current_exited();
+}
+
+pub fn suspend_current_and_run_next() {
+    mark_current_suspended();
+    run_next_task();
+}
+
+pub fn exit_current_and_run_next() {
+    mark_current_exited();
+    run_next_task();
+}
+
+pub fn current_user_token() -> usize {
+    TASK_MANAGER.get_current_token()
+}
+
+pub fn current_trap_cx() -> &'static mut TrapContext {
+    TASK_MANAGER.get_current_trap_cx()
 }

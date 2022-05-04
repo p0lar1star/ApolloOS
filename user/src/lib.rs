@@ -10,7 +10,6 @@ mod syscall;// import his child module syscall.rs
 #[no_mangle]
 #[link_section = ".text.entry"]
 pub extern "C" fn _start() -> ! {
-    clear_bss();
     exit(main());
     panic!("unreachable after sys_exit!");
 }
@@ -19,16 +18,6 @@ pub extern "C" fn _start() -> ! {
 #[linkage = "weak"]
 fn main() -> i32 {
     panic!("Cannot find main!");
-}
-
-fn clear_bss() {
-    extern "C" {
-        fn start_bss();
-        fn end_bss();
-    }
-    (start_bss as usize..end_bss as usize).for_each(|addr| unsafe {
-        (addr as *mut u8).write_volatile(0);
-    });
 }
 
 use syscall::*;

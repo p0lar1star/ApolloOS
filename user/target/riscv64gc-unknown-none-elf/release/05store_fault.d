@@ -1,0 +1,1 @@
+/mnt/c/Users/Polaris/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/05store_fault: /mnt/c/Users/Polaris/Desktop/oslab/user/src/bin/05store_fault.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/console.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/lang_items.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/lib.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/syscall.rs

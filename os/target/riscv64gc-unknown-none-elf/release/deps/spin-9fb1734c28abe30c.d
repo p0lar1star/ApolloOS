@@ -1,0 +1,10 @@
+/mnt/c/Users/Polaris/Desktop/oslab/os/target/riscv64gc-unknown-none-elf/release/deps/spin-9fb1734c28abe30c.rmeta: /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/lib.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/mutex.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/rw_lock.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/once.rs
+
+/mnt/c/Users/Polaris/Desktop/oslab/os/target/riscv64gc-unknown-none-elf/release/deps/libspin-9fb1734c28abe30c.rlib: /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/lib.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/mutex.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/rw_lock.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/once.rs
+
+/mnt/c/Users/Polaris/Desktop/oslab/os/target/riscv64gc-unknown-none-elf/release/deps/spin-9fb1734c28abe30c.d: /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/lib.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/mutex.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/rw_lock.rs /home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/once.rs
+
+/home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/lib.rs:
+/home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/mutex.rs:
+/home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/rw_lock.rs:
+/home/p0lar1s/.cargo/registry/src/mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd/spin-0.5.2/src/once.rs:

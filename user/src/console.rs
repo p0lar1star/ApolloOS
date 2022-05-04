@@ -1,8 +1,11 @@
-use super::write;// import 'writte' from his father lib.rs
+use super::write;
+// import 'write' from his father lib.rs
 use core::fmt::{self, Write};
 
 struct Stdout;
+
 const STDOUT: usize = 1;
+
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         write(STDOUT, s.as_bytes());
