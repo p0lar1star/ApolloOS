@@ -23,9 +23,9 @@ impl TrapContext {
     pub fn set_sp(&mut self, sp: usize) {
         self.x[2] = sp;
     }
-    /// app上下文初始化，此时还处在S特权级
+    /// 形成app上下文初始化所需的Trap上下文，此时还处在S特权级
     /// 设置sstatus为U特权级,
-    /// 设置sepc指向程序指令的起始地址,
+    /// 设置sepc（返回地址）指向程序指令的起始地址,
     /// 设置sp指针指向用户栈的栈顶,
     /// 设置kernel_satp保存内核地址空间对应的satp寄存器
     /// 设置kernel_sp指向用户栈的栈底（高地址）

@@ -19,19 +19,21 @@ pub fn init() {
     set_kernel_trap_entry();
 }
 
+/// 设置内核状态下的trap_entry
 fn set_kernel_trap_entry() {
     unsafe {
         stvec::write(trap_from_kernel as usize, TrapMode::Direct);
     }
 }
 
+/// 设置用户态的trap_entry
 fn set_user_trap_entry() {
     unsafe {
         stvec::write(TRAMPOLINE as usize, TrapMode::Direct);
     }
 }
 
-// 设置sie.stie为1使S特权级时钟中断不会被屏蔽
+/// 设置sie.stie为1使S特权级时钟中断不会被屏蔽
 pub fn enable_timer_interrupt() {
     unsafe {
         sie::set_stimer();
@@ -39,13 +41,20 @@ pub fn enable_timer_interrupt() {
 }
 
 #[no_mangle]
+/// trap处理函数
 pub fn trap_handler() -> ! {
+    // 设置内核状态下的trap_entry，在内核下不允许trap，直接panic
     set_kernel_trap_entry();
+    // 获得当前应用的Trap上下文的可变引用
     let cx = current_trap_cx();
+    // trap的原因是什么？
+    // scause/stval在trap时由硬件分别被修改成这次 Trap 的原因以及相关的附加信息。
     let scause = scause::read();
     let stval = stval::read();
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
+            // 进入 Trap 的时候，硬件会将 sepc 设置为这条 ecall 指令所在的地址
+            // Trap 返回之后，应用程序控制流从 ecall 的下一条指令开始执行
             cx.sepc += 4;
             cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
         }
@@ -70,19 +79,28 @@ pub fn trap_handler() -> ! {
             );
         }
     }
+    // 完成trap处理，返回用户态
     trap_return();
 }
 
 #[no_mangle]
+/// trap处理完毕，在trap_handler最后执行本函数返回到用户态
 pub fn trap_return() -> ! {
+    // 设置用户态的trap_entry为__alltraps
+    // 让应用 Trap 到 S 的时候可以跳转到 __alltraps
     set_user_trap_entry();
     let trap_cx_ptr = TRAP_CONTEXT;
+    // 得到应用的token
     let user_satp = current_user_token();
     extern "C" {
         fn __alltraps();
         fn __restore();
     }
+    // 计算 __restore的虚拟地址 = TRAMPOLINE + restore相对于alltraps的偏移量
     let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    // 使用 fence.i 指令清空指令缓存 i-cache
+    // 在内核中进行的一些操作可能导致一些原先存放某个应用代码的物理页帧如今用来存放数据或者是其他应用的代码
+    // i-cache 中可能还保存着该物理页帧的错误快照,导致jr跳到错误的物理页帧
     unsafe {
         asm!(
         "fence.i",

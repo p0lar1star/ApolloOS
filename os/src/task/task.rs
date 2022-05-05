@@ -19,15 +19,16 @@ pub struct TaskControlBlock {
 }
 
 impl TaskControlBlock {
-    /// 查找应用的Trap上下文的内核虚地址
-    /// 返回对Trap上下文的可变引用
+    /// 查找应用的Trap上下文的内核虚地址，
+    /// 返回对Trap上下文的可变引用，
+    /// 即Trap上下文的物理地址
     pub fn get_trap_cx(&self) -> &'static mut TrapContext {
         // PhysPageNum::get_mut 是一个泛型函数，由于我们已经声明了总体返回 TrapContext 的可变引用，
         // 则Rust编译器会给 get_mut 泛型函数针对具体类型 TrapContext 的情况生成一个特定版本的 get_mut 函数实现。
         // 在 get_trap_cx 函数中则会静态调用``get_mut`` 泛型函数的特定版本实现。
         self.trap_cx_ppn.get_mut()
     }
-    /// 得到当前应用地址空间的token（satp寄存器）
+    /// 得到当前应用地址空间对应的的token（satp寄存器）
     pub fn get_user_token(&self) -> usize {
         self.memory_set.token()
     }
@@ -56,13 +57,14 @@ impl TaskControlBlock {
         // 在应用的内核栈顶压入一个跳转到trap_return的上下文
         let task_control_block = Self {
             task_status,
+            // 在应用的内核栈顶写入构造好的任务上下文
             task_cx: TaskContext::goto_trap_return(kernel_stack_top),
             memory_set,
-            trap_cx_ppn,// trap上下文对应的物理页号
+            trap_cx_ppn,// 应用的地址空间中trap上下文对应的物理页号
             base_size: user_sp,
         };
         // prepare TrapContext in user space
-        let trap_cx = task_control_block.get_trap_cx();// 查找trap上下文在内核地址空间中的虚地址
+        let trap_cx = task_control_block.get_trap_cx();// 查找应用空间的trap上下文在内核地址空间中的虚地址
         // 调用app_init_context通过Trap上下文的可变引用来进行初始化
         *trap_cx = TrapContext::app_init_context(
             entry_point,

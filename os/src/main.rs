@@ -62,6 +62,7 @@ pub fn rust_main() -> ! {
     trap::init();
     // 避免S特权级时钟中断被屏蔽
     trap::enable_timer_interrupt();
+    // 开启时钟中断
     timer::set_next_trigger();
     task::run_first_task();
     panic!("Unreachable in rust_main!");

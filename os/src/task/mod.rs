@@ -28,7 +28,7 @@ struct TaskManagerInner {
 lazy_static! {
     /// 全局任务管理器
     pub static ref TASK_MANAGER: TaskManager = {
-        println!("init TASK_MANAGER");
+        println!("init TASK_MANAGER!");
         let num_app = get_num_app();
         println!("num_app = {}", num_app);
         let mut tasks: Vec<TaskControlBlock> = Vec::new();
@@ -52,6 +52,8 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
+        // 运行第一个程序时，task0.task_cx是在他的的内核栈顶构造好的任务上下文
+        // 这个上下文中，ra是trap_return，sp是内核栈顶
         let next_task_cx_ptr = &task0.task_cx as *const TaskContext;
         drop(inner);
         let mut _unused = TaskContext::zero_init();
@@ -94,7 +96,8 @@ impl TaskManager {
         let inner = self.inner.exclusive_access();
         inner.tasks[inner.current_task].get_user_token()
     }
-    /// 获得当前应用地址空间中的Trap上下文的可变引用
+    /// 获得当前应用地址空间中的Trap上下文的可变引用，
+    /// 即trap上下文的物理地址
     fn get_current_trap_cx(&self) -> &'static mut TrapContext {
         let inner = self.inner.exclusive_access();
         inner.tasks[inner.current_task].get_trap_cx()
@@ -151,10 +154,13 @@ pub fn exit_current_and_run_next() {
     run_next_task();
 }
 
+/// 得到当前应用的token
 pub fn current_user_token() -> usize {
     TASK_MANAGER.get_current_token()
 }
 
+/// 获得当前正在运行的应用程序的Trap上下文的可变引用，
+/// 即应用地址空间的Trap上下文的物理地址
 pub fn current_trap_cx() -> &'static mut TrapContext {
     TASK_MANAGER.get_current_trap_cx()
 }

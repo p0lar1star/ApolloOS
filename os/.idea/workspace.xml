@@ -119,11 +119,6 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="Makefile" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" singleton="false">
       <makefile filename="C:\Users\Polaris\Desktop\oslab\os\Makefile" target="" workingDirectory="" arguments="">
         <envs />
@@ -188,6 +183,9 @@
       <workItem from="1651587867255" duration="3225000" />
       <workItem from="1651593401940" duration="19444000" />
       <workItem from="1651665084953" duration="15247000" />
+      <workItem from="1651758973734" duration="374000" />
+      <workItem from="1651759524140" duration="9940000" />
+      <workItem from="1651770771673" duration="54000" />
     </task>
     <servers />
   </component>
