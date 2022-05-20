@@ -1,8 +1,8 @@
-// os//src/main.rs
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+
 extern crate alloc;
 
 #[macro_use]
@@ -17,16 +17,16 @@ mod board;
 
 #[macro_use]
 mod console;
+mod config;
 mod lang_items;
+mod loader;
+mod mm;
 mod sbi;
 mod sync;
 mod syscall;
-mod loader;
-mod config;
-mod trap;
 mod task;
 mod timer;
-mod mm;
+mod trap;
 
 use core::arch::global_asm;
 
@@ -38,10 +38,9 @@ fn clear_bss() {
         fn sbss();
         fn ebss();
     }
-    for a in sbss as usize..ebss as usize {
-        unsafe {
-            (a as *mut usize).write_volatile(0);
-        }
+    unsafe {
+        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
+            .fill(0);
     }
 }
 
@@ -59,11 +58,13 @@ pub fn rust_main() -> ! {
     mm::init();
     println!("[kernel] back to rust_main!");
     mm::remap_test();
+    // 第一个加载init_proc
+    task::add_initproc();
+    println!("after initproc!");
     trap::init();
-    // 避免S特权级时钟中断被屏蔽
     trap::enable_timer_interrupt();
-    // 开启时钟中断
     timer::set_next_trigger();
-    task::run_first_task();
+    loader::list_apps();
+    task::run_tasks();
     panic!("Unreachable in rust_main!");
 }

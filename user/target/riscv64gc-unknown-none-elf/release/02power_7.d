@@ -1,1 +1,0 @@
-/mnt/c/Users/Polaris/Desktop/oslab/user/target/riscv64gc-unknown-none-elf/release/02power_7: /mnt/c/Users/Polaris/Desktop/oslab/user/src/bin/02power_7.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/console.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/lang_items.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/lib.rs /mnt/c/Users/Polaris/Desktop/oslab/user/src/syscall.rs

@@ -77,6 +77,18 @@ impl MemorySet {
             None,
         );
     }
+    /// 通过逻辑段的起始虚拟页号删除整个逻辑段
+    pub fn remove_area_with_start_vpn(&mut self, start_vpn: VirtPageNum) {
+        if let Some((idx, area)) = self
+            .areas
+            .iter_mut()
+            .enumerate()
+            .find(|(_, area)| area.vpn_range.get_start() == start_vpn)
+        {
+            area.unmap(&mut self.page_table);
+            self.areas.remove(idx);
+        }
+    }
     /// 在当前地址空间插入一个新的逻辑段map_area，
     /// 如果是以相对随机方式映射到内存，可选地在那些被映射到的物理页帧上写入一些初始化数据data
     /// 先将逻辑段对应的虚拟页号
@@ -180,6 +192,7 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         // map trampoline
         // 将跳板插入到应用地址空间的最高页面！
+        // 但是注意，并没有把跳板页面作为一个逻辑段MapArea插入到MemorySet.areas中
         memory_set.map_trampoline();
         // map program headers of elf, with U flag
         // 使用了外部crate：xmas_elf来解析传入的应用ELF数据并取出各个部分
@@ -257,6 +270,26 @@ impl MemorySet {
             elf.header.pt2.entry_point() as usize,
         )
     }
+    /// 构建一个**与传入的地址空间相同的**地址空间
+    pub fn from_existed_user(user_space: &MemorySet) -> MemorySet {
+        let mut memory_set = Self::new_bare();
+        // map trampoline
+        memory_set.map_trampoline();
+        // copy data sections/trap_context/user_stack
+        for area in user_space.areas.iter() {
+            let new_area = MapArea::from_another(area);
+            memory_set.push(new_area, None);
+            // copy data from another space
+            for vpn in area.vpn_range {
+                let src_ppn = user_space.translate(vpn).unwrap().ppn();
+                let dst_ppn = memory_set.translate(vpn).unwrap().ppn();
+                dst_ppn
+                    .get_bytes_array()
+                    .copy_from_slice(src_ppn.get_bytes_array());
+            }
+        }
+        memory_set
+    }
     pub fn activate(&self) {
         let satp = self.page_table.token();
         unsafe {
@@ -272,6 +305,10 @@ impl MemorySet {
     }
     pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
         self.page_table.translate(vpn)
+    }
+    pub fn recycle_data_pages(&mut self) {
+        //*self = Self::new_bare();
+        self.areas.clear();
     }
 }
 
@@ -308,6 +345,15 @@ impl MapArea {
             data_frames: BTreeMap::new(),
             map_type,
             map_perm,
+        }
+    }
+    /// 从另一个逻辑段MapArea得到一个一样的逻辑段MapArea
+    pub fn from_another(another: &MapArea) -> Self {
+        Self {
+            vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
+            data_frames: BTreeMap::new(),
+            map_type: another.map_type,
+            map_perm: another.map_perm,
         }
     }
     // map和unmap的实现取决于映射方式：是恒等映射还是相对随机映射？

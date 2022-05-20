@@ -1,5 +1,6 @@
 // os/src/mm/page_table.rs
-use super::{frame_alloc, FrameTracker, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
+use super::{frame_alloc, FrameTracker, PhysAddr, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -68,7 +69,7 @@ impl PageTableEntry {
     }
 }
 
-/// PageTable类型用于描述某个应用的地址空间对应的页表，我将其称之为总页表
+/// PageTable类型用于描述某个应用的地址空间对应的页表，我将其称之为总页表，
 /// PageTable不仅保存**页表根节点**的物理页号（root_ppn），还保存
 /// **页表所有节点**（包括根节点）所在的物理页号。（FrameTracker是物理页号的封装）
 pub struct PageTable {
@@ -128,8 +129,8 @@ impl PageTable {
         result
     }
 
-    /// 根据虚拟页号，在多级页表中找一个与其对应的页表项
-    /// 找不到则返回None，找到则返回响应页表项的可变引用
+    /// 根据虚拟页号，在多级页表中找一个与其对应的页表项,
+    /// 找不到则返回None，找到则返回页表项的可变引用
     fn find_pte(&self, vpn: VirtPageNum) -> Option<&mut PageTableEntry> {
         let idxs = vpn.indexes();
         let mut ppn = self.root_ppn;
@@ -169,30 +170,88 @@ impl PageTable {
     pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
         self.find_pte(vpn).map(|pte| { pte.clone() })
     }
+    /// 根据传入的虚拟地址返回对应的Option<物理地址>
+    pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
+        self.find_pte(va.clone().floor()).map(|pte| {
+            //println!("translate_va:va = {:?}", va);
+            let aligned_pa: PhysAddr = pte.ppn().into();
+            //println!("translate_va:pa_align = {:?}", aligned_pa);
+            let offset = va.page_offset();
+            let aligned_pa_usize: usize = aligned_pa.into();
+            // 返回虚拟地址对应的物理地址
+            (aligned_pa_usize + offset).into()
+        })
+    }
     /// 按照satp CSR格式要求构造一个无符号64位整数
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0
     }
 }
 
+/// 传入当前应用的token，buf的虚拟地址和长度，返回对u8缓冲区的可变引用
 pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&'static mut [u8]> {
-    let page_table = PageTable::from_token(token);
-    let mut start = ptr as usize;
-    let end = start + len;
+    let page_table = PageTable::from_token(token);    // 构建临时页表
+    let mut start = ptr as usize; // 缓冲区buf起始地址
+    let end = start + len; // 缓冲区buf终止地址
+    // v用于保存对u8缓冲区的可变引用，由于缓冲区可能因为不在同一页要被分成多段，所以使用vec保存多个引用
     let mut v = Vec::new();
     while start < end {
         let start_va = VirtAddr::from(start);
         let mut vpn = start_va.floor();
+        // 将缓冲区起始地址strat_va转换成虚拟页号继而转化成物理页号
         let ppn = page_table.translate(vpn).unwrap().ppn();
+        // 得到下一页面的页面号
         vpn.step();
+        // 下一页面的页面号转化成当前页面的终止地址
         let mut end_va: VirtAddr = vpn.into();
+        // 缓冲区终止地址 > 当前页面的终止地址？
+        // 如果是，那么先取 缓冲区终止地址 和 当前页面终止地址的 最小值，也就是当前页面的终止地址
         end_va = end_va.min(VirtAddr::from(end));
         if end_va.page_offset() == 0 {
+            // 对于buf超过当前这一页的情况
+            // push 一整物理页上 从start_va的偏移地址开始到一整页终止 u8字节数组 的可变引用
             v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..]);
         } else {
+            // 对于buf未超过当前这一页的情况
+            // push 一整物理页上 从start_va的偏移地址开始到end_va的偏移地址结束 u8字节数组 的可变引用
             v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
         }
+        // 对于buf超过当前这一页
         start = end_va.into();
     }
     v
+}
+
+/// 在内核中查找用户地址空间中的字符串。
+// 这个函数签名可能设计的不太好，因为ptr是应用名字字符串在用户地址空间的起始地址，用usize类型比较好
+pub fn translated_str(token: usize, ptr: *const u8) -> String {
+    let page_table = PageTable::from_token(token);
+    let mut string = String::new();
+    let mut va = ptr as usize;
+    // 这里可能也设计的不太好？对于物理地址仅进行一次查询即可，没必要每次循环都根据虚拟地址来查物理地址，每次循环物理地址+1即可
+    // 非也，万一不在同一个页面呢？还是有必要对于每个虚拟地址都查找物理地址的
+    loop {
+        let ch: u8 = *(page_table
+            .translate_va(VirtAddr::from(va))
+            .unwrap()
+            .get_mut());
+        if ch == 0 {
+            break;
+        } else {
+            string.push(ch as char);
+            va += 1;
+        }
+    }
+    string
+}
+
+pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
+    //println!("into translated_refmut!");
+    let page_table = PageTable::from_token(token);
+    let va = ptr as usize;
+    //println!("translated_refmut: before translate_va");
+    page_table
+        .translate_va(VirtAddr::from(va))
+        .unwrap()
+        .get_mut()
 }

@@ -112,15 +112,15 @@ impl From<VirtPageNum> for usize {
 
 // 以下是地址和页号之间的转换
 impl VirtAddr {
-    /// 向下取整
+    /// 对虚拟地址向下取整，返回虚拟页号
     pub fn floor(&self) -> VirtPageNum {
         VirtPageNum(self.0 / PAGE_SIZE)
     }
-    /// 向上取整
+    /// 对虚拟地址向上取整，返回虚拟页号
     pub fn ceil(&self) -> VirtPageNum {
         VirtPageNum((self.0 + PAGE_SIZE - 1) / PAGE_SIZE)
     }
-    /// 判断页内偏移是否为0
+    /// 得到页内偏移
     pub fn page_offset(&self) -> usize {
         self.0 & (PAGE_SIZE - 1)
     }
@@ -143,21 +143,26 @@ impl From<VirtPageNum> for VirtAddr {
 }
 
 impl PhysAddr {
-    // 对于不对齐的情况，物理地址需要先向下或向上取整才能转换成物理页号
+    /// 对于不对齐的情况，物理地址需要先向下或向上取整才能转换成物理页号
     pub fn floor(&self) -> PhysPageNum {
         PhysPageNum(self.0 / PAGE_SIZE)
     }
-    // 向上取整
+    /// 向上取整
     pub fn ceil(&self) -> PhysPageNum {
         PhysPageNum((self.0 + PAGE_SIZE - 1) / PAGE_SIZE)
     }
-    // page_offset用于检测物理地址是否与页面大小对齐
+    /// page_offset用于检测物理地址是否与页面大小0x1000对齐，
+    /// 返回值不为0说明没对齐
     pub fn page_offset(&self) -> usize {
         // 0x1000 - 1 = 0xFFF，取低12bits
         self.0 & (PAGE_SIZE - 1)
     }
     pub fn aligned(&self) -> bool {
         self.page_offset() == 0
+    }
+    /// 根据传入的物理地址返回对物理地址的可变引用
+    pub fn get_mut<T>(&self) -> &'static mut T {
+        unsafe { (self.0 as *mut T).as_mut().unwrap() }
     }
 }
 
@@ -215,6 +220,7 @@ impl PhysPageNum {
     /// 获取一个恰好放在一个物理页帧开头的类型为 T 的数据的可变引用
     /// &'static 对于生命周期有着非常强的要求：一个引用指向的数据必须要活得跟剩下的程序一样久，才能被标注为 &'static
     pub fn get_mut<T>(&self) -> &'static mut T {
+        // 将物理页面号转化为 该页面的起始物理地址
         let pa: PhysAddr = self.clone().into();
         unsafe {
             (pa.0 as *mut T).as_mut().unwrap()
